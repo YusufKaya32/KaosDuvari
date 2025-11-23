@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaos Duvarı - Final v4.0</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        h1.baslik {
+            text-align: center;
+            color: #555;
+            margin-top: 50px;
+            font-size: 2.5rem;
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.5;
+        }
+
+        /* --- MESAJ KUTUSU --- */
+        .mesaj-kutusu {
+            position: absolute;
+            background: linear-gradient(145deg, #2d3436, #000); 
+            border-radius: 20px;
+            padding: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            
+            border: 2px solid #444;
+            
+            /* DÜZELTME: Genişlik artık esnek */
+            width: fit-content; 
+            max-width: 80vw; /* Ekran genişliğinin %80'ini geçemez */
+            min-width: 160px;
+            
+            animation: popUp 0.3s ease-out;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            cursor: pointer;
+        }
+
+        .mesaj-kutusu:hover {
+            z-index: 999999 !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.3);
+        }
+
+        /* --- METİN AYARLARI --- */
+        .mesaj-metni {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            
+            /* DÜZELTME: Kelime kırma ve taşma kontrolü */
+            word-wrap: break-word;
+            word-break: break-word; /* Uzun kelimeyi zorla aşağı at */
+            overflow-wrap: break-word;
+            
+            width: 100%;
+            line-height: 1.2;
+            margin-bottom: 15px; 
+            flex-grow: 1; 
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+        }
+
+        .butonlar {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            flex-shrink: 0; 
+            z-index: 5;
+        }
+
+        button {
+            border: none;
+            padding: 10px 0; 
+            width: 45%; 
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.9); }
+        
+        .btn-like { background-color: #00b894; color: white; }
+        .btn-dislike { background-color: #ff4757; color: white; }
+
+        /* --- YANIP SÖNME EFEKTİ (YAVAŞLATILDI) --- */
+        @keyframes alarm {
+            0% { background-color: #2d0000; border-color: red; box-shadow: 0 0 5px red; }
+            50% { background-color: #600000; border-color: darkred; box-shadow: 0 0 20px red; } /* Renk tonunu yumuşattım */
+            100% { background-color: #2d0000; border-color: red; box-shadow: 0 0 5px red; }
+        }
+
+        .can-cekisiyor {
+            animation: alarm 1.5s infinite ease-in-out !important; /* 0.6s -> 1.5s yapıldı */
+            border: 2px solid red !important;
+        }
+        .can-cekisiyor .mesaj-metni { color: #ffadad !important; }
+
+        .seviye-orta { background: linear-gradient(145deg, #0984e3, #001f3f); border-color: #74b9ff; }
+        .seviye-yuksek { background: linear-gradient(145deg, #6c5ce7, #2d006b); border-color: #a29bfe; }
+        .seviye-godzilla { background: linear-gradient(145deg, #d63031, #630000); border-color: #ff7675; }
+        
+        .lider {
+            background: linear-gradient(145deg, #f1c40f, #b7950b) !important;
+            border: 4px solid white !important;
+            box-shadow: 0 0 60px rgba(241, 196, 15, 0.9);
+            z-index: 1000;
+        }
+
+        .kral-taci {
+            position: absolute;
+            top: -55px;
+            font-size: 50px;
+            display: none;
+            filter: drop-shadow(0 0 10px gold);
+            animation: zipla 1s infinite alternate;
+        }
+        .lider .kral-taci { display: block; }
+        @keyframes zipla { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+
+        #kontrol-paneli {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            background-color: rgba(30, 30, 30, 0.95);
+            padding: 15px;
+            border-radius: 50px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            border: 2px solid #555;
+            z-index: 2147483647; 
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: none;
+            outline: none;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+        }
+
+        #gonderBtn {
+            background-color: #6c5ce7;
+            color: white;
+            padding: 0 25px;
+            border-radius: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="baslik">Yaşamak için "Like" Topla!</h1>
+    <div id="duvar"></div>
+
+    <div id="kontrol-paneli">
+        <input type="text" id="mesajInput" placeholder="Dünyaya seslen..." onkeypress="enterBasildi(event)">
+        <button id="gonderBtn" onclick="mesajEkle()">BAĞIR 📣</button>
+    </div>
+
+    <script>
+        let sayac = 0;
+
+        // ENTROPİ
+        setInterval(function() {
+            const mesajlar = document.getElementsByClassName("mesaj-kutusu");
+            for (let i = mesajlar.length - 1; i >= 0; i--) {
+                let kutu = mesajlar[i];
+                if (kutu.classList.contains("lider")) continue; 
+                boyutDegistir(kutu.id, -1, false); 
+            }
+        }, 1500);
+
+        function mesajEkle() {
+            const input = document.getElementById("mesajInput");
+            const mesaj = input.value.trim();
+            const duvar = document.getElementById("duvar");
+
+            if (mesaj === "") return;
+
+            sayac++;
+            const yeniID = "msg-" + sayac;
+            const yeniKutu = document.createElement("div");
+            yeniKutu.className = "mesaj-kutusu";
+            yeniKutu.id = yeniID;
+
+            const randomX = Math.floor(Math.random() * (window.innerWidth - 300));
+            const randomY = Math.floor(Math.random() * (window.innerHeight * 0.6)) + 50; 
+
+            yeniKutu.style.left = randomX + "px";
+            yeniKutu.style.top = randomY + "px";
+            
+            yeniKutu.innerHTML = `
+                <div class="kral-taci">👑</div>
+                <span class="mesaj-metni" id="text-${yeniID}" style="font-size: 16px;">${mesaj}</span>
+                <div class="butonlar">
+                    <button class="btn-like" onclick="boyutDegistir('${yeniID}', 8, true)">👍</button>
+                    <button class="btn-dislike" onclick="boyutDegistir('${yeniID}', -8, true)">👎</button>
+                </div>
+            `;
+
+            duvar.appendChild(yeniKutu);
+            input.value = "";
+            input.focus();
+            kralGuncelle();
+        }
+
+        function enterBasildi(event) { if (event.key === "Enter") mesajEkle(); }
+
+        function boyutDegistir(kutuID, miktar, manuelIslem) {
+            const kutu = document.getElementById(kutuID);
+            if (!kutu) return; 
+
+            const metin = document.getElementById("text-" + kutuID);
+            let mevcutBoyut = parseInt(metin.style.fontSize);
+            let yeniBoyut = mevcutBoyut + miktar;
+
+            // ÖLÜM
+            if (yeniBoyut <= 8) {
+                if(manuelIslem) {
+                    kutu.style.transform = "scale(0)";
+                    setTimeout(() => { if(kutu) kutu.remove(); kralGuncelle(); }, 300);
+                } else {
+                    kutu.remove();
+                    kralGuncelle();
+                }
+                return;
+            }
+
+            metin.style.fontSize = yeniBoyut + "px";
+
+            // SINIF YÖNETİMİ
+            kutu.classList.remove("seviye-orta", "seviye-yuksek", "seviye-godzilla", "can-cekisiyor");
+
+            if (yeniBoyut <= 16) {
+                kutu.classList.add("can-cekisiyor");
+            } 
+            else if (yeniBoyut > 25 && yeniBoyut <= 50) {
+                kutu.classList.add("seviye-orta"); 
+            } 
+            else if (yeniBoyut > 50 && yeniBoyut <= 90) {
+                kutu.classList.add("seviye-yuksek"); 
+            } 
+            else if (yeniBoyut > 90) {
+                kutu.classList.add("seviye-godzilla");
+            }
+
+            if (manuelIslem) kralGuncelle();
+
+            // TAŞMA KONTROLÜ
+            setTimeout(() => { ekranSiniriniKoru(kutu); }, 10);
+        }
+
+        function ekranSiniriniKoru(kutu) {
+            const rect = kutu.getBoundingClientRect();
+            const guvenliAltSinir = window.innerHeight - 130; 
+
+            if (rect.bottom > guvenliAltSinir) {
+                const tasmaMiktari = rect.bottom - guvenliAltSinir;
+                const mevcutTop = parseInt(kutu.style.top);
+                kutu.style.top = (mevcutTop - tasmaMiktari) + "px";
+            }
+             if (rect.top < 80) { 
+                kutu.style.top = "80px";
+            }
+        }
+
+        function kralGuncelle() {
+            const mesajlar = document.getElementsByClassName("mesaj-kutusu");
+            let enBuyukBoyut = 0;
+            let kralOlanKutu = null;
+
+            for (let kutu of mesajlar) {
+                kutu.classList.remove("lider");
+                let boyut = parseInt(kutu.querySelector(".mesaj-metni").style.fontSize);
+                if (boyut > enBuyukBoyut) {
+                    enBuyukBoyut = boyut;
+                    kralOlanKutu = kutu;
+                }
+            }
+
+            if (kralOlanKutu) {
+                kralOlanKutu.classList.add("lider");
+                kralOlanKutu.classList.remove("can-cekisiyor"); 
+            }
+        }
+    </script>
+</body>
+</html>
